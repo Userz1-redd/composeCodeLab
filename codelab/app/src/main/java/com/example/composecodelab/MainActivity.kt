@@ -3,6 +3,10 @@ package com.example.composecodelab
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,7 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,59 +45,72 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
 @Composable
 fun MyApp(){
-    Surface(color = MaterialTheme.colors.background) {
-        Scaffold(backgroundColor = Color.White, topBar = {MyAppBar()}) {
-            MyListView()
+    var onboardingState= remember { mutableStateOf(true)}
+    if(onboardingState.value){
+        onboardingScreen(onContinueClicked = {onboardingState.value = !onboardingState.value})
+    }
+    else{
+        listScreen()
+    }
+}
+
+
+@Composable
+fun onboardingScreen(onContinueClicked : () -> Unit){
+    Surface{
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .background(Color.LightGray),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+            ){
+            Text(text = "welcome to basic codelabs")
+            Button(modifier = Modifier.padding(10.dp), onClick = onContinueClicked){
+                Text("Continue")
+            }
         }
     }
 }
 
 @Composable
-fun MyAppBar(){
-    TopAppBar(elevation = 10.dp){
-        Text(text = "리스트입니다",
-            modifier = Modifier
-                .padding(8.dp)
-                .align(Alignment.CenterVertically),
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Black
-            )
-    }
-}
-
-
-@Composable
-fun MyListView(){
-    LazyColumn(){
-        items(100){
-            MyListItem()
+fun listScreen() {
+    Surface{
+        LazyColumn{
+            items(items = List(100){it}){name ->
+                listItem(name.toString())
+            }
         }
     }
 }
 
 @Composable
-fun MyListItem(){
-    Row(modifier = Modifier.padding(10.dp), horizontalArrangement = Arrangement.SpaceEvenly){
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data("https://example.com/image.jpg")
-                .size(10)
-                .crossfade(true)
-                .build(),
-            placeholder = painterResource(R.drawable.ic_launcher_background),
-            contentDescription = stringResource(R.string.description),
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.clip(CircleShape),
+fun listItem(s : String){
+    var expanded by remember { mutableStateOf(false)}
+    val padding by animateDpAsState(
+        if (expanded) 48.dp else 0.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
         )
+    )
 
-        Column(){
-            Text(text = "MyUser",modifier = Modifier.padding(10.dp))
-            Text(text = "Hello",modifier = Modifier.padding(10.dp))
+    Surface(color = Color.LightGray,modifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = 4.dp, horizontal = 6.dp)){
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = padding.coerceAtLeast(0.dp)),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center){
+            Text(text = s)
+            OutlinedButton(modifier = Modifier.padding(10.dp),onClick = {expanded = !expanded} ){
+                Text("Button")
+            }
         }
-
-
     }
 }
 
@@ -103,5 +120,13 @@ fun MyListItem(){
 fun DefaultPreview() {
     MaterialTheme {
        MyApp()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun Preview() {
+    MaterialTheme {
+       listScreen()
     }
 }
